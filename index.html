@@ -1,0 +1,2779 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Worlds Prediction League</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f5f7;
+            color: #222;
+        }
+
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 20px;
+        }
+
+
+        header .header-inner {
+            max-width: 900px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+
+        h2 {
+            margin-top: 0;
+        }
+
+
+        h3 {
+            margin-bottom: 15px;
+        }
+
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 11px 16px;
+            font-size: 15px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+        }
+
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+
+        button.secondary {
+            background: #6b7280;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        .invite-code {
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding: 10px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .invite-row {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .invite-row-used {
+            opacity: 0.65;
+        }
+
+        .signup-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #2563eb;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+
+        button.team-button {
+            flex: 1;
+            background: white;
+            color: #222;
+            border: 2px solid #d1d5db;
+            padding: 15px 10px;
+            font-weight: bold;
+        }
+
+
+        button.team-button.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+
+        button.team-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        button.submit-button {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+
+        .hidden {
+            display: none;
+        }
+
+
+        .message {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+
+        .match {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+
+        .teams {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+
+        .vs {
+            font-weight: bold;
+            color: #6b7280;
+        }
+
+
+        .match-info {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+
+        .result {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+
+        .points {
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+
+        .leaderboard-row:last-child {
+            border-bottom: none;
+        }
+
+
+        .admin-match {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+
+        .admin-match-teams {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 25px 0;
+        }
+
+
+        @media (max-width: 600px) {
+
+            header .header-inner {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+
+            .teams {
+                flex-direction: column;
+            }
+
+
+            .vs {
+                margin: 2px 0;
+            }
+
+
+            button.team-button {
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header id="appHeader" class="hidden">
+
+    <div class="header-inner">
+
+        <h1>🏆 Worlds Prediction League</h1>
+
+        <div>
+
+            <span id="welcome"></span>
+
+            <button
+                class="secondary"
+                onclick="logout()"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<div class="container">
+
+
+    <!-- LOGIN -->
+
+    <div
+        id="loginCard"
+        class="card"
+    >
+
+        <h2>Worlds Prediction League</h2>
+
+        <p>
+            Log in to make your match predictions.
+        </p>
+
+
+        <input
+            type="email"
+            id="email"
+            placeholder="Email"
+        >
+
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Password"
+        >
+
+
+        <button onclick="login()">
+            Log In
+        </button>
+
+
+        <div
+            id="loginMessage"
+            class="message"
+        ></div>
+
+        <div
+            class="signup-link"
+            onclick="showSignup()"
+        >
+            Don't have an account? Sign up with an invite
+        </div>
+
+    </div>
+
+
+
+    <!-- SIGN UP -->
+
+    <div
+        id="signupCard"
+        class="card hidden"
+    >
+
+        <h2>Join the Worlds Prediction League</h2>
+
+        <p>
+            You need an invite code from the league admin to create an account.
+        </p>
+
+        <label for="signupDisplayName">Display Name</label>
+        <input
+            type="text"
+            id="signupDisplayName"
+            placeholder="Your name"
+            maxlength="50"
+        >
+
+        <label for="signupEmail">Email</label>
+        <input
+            type="email"
+            id="signupEmail"
+            placeholder="Email"
+        >
+
+        <label for="signupPassword">Password</label>
+        <input
+            type="password"
+            id="signupPassword"
+            placeholder="At least 6 characters"
+        >
+
+        <label for="signupInviteCode">Invite Code</label>
+        <input
+            type="text"
+            id="signupInviteCode"
+            placeholder="Enter your invite code"
+            maxlength="20"
+            style="text-transform: uppercase;"
+        >
+
+        <button onclick="signup()">Create Account</button>
+
+        <button
+            class="secondary"
+            onclick="showLogin()"
+            style="margin-left: 8px;"
+        >
+            Back to Login
+        </button>
+
+        <div
+            id="signupMessage"
+            class="message"
+        ></div>
+
+    </div>
+
+
+    <!-- MAIN APP -->
+
+    <div
+        id="app"
+        class="hidden"
+    >
+
+
+
+        <!-- ADMIN DASHBOARD -->
+
+        <div
+            id="adminSection"
+            class="card hidden"
+        >
+
+            <h2>⚙️ Admin Dashboard</h2>
+
+
+            <h3>Add Match</h3>
+
+
+            <label for="matchStage">
+                Stage
+            </label>
+
+            <select id="matchStage">
+
+                <option value="">
+                    Select stage
+                </option>
+
+            </select>
+
+
+            <label for="team1">
+                Team 1
+            </label>
+
+            <input
+                type="text"
+                id="team1"
+                placeholder="Team 1"
+            >
+
+
+            <label for="team2">
+                Team 2
+            </label>
+
+            <input
+                type="text"
+                id="team2"
+                placeholder="Team 2"
+            >
+
+
+            <label for="matchTime">
+                Match Time (Eastern Time)
+            </label>
+
+            <input
+                type="datetime-local"
+                id="matchTime"
+            >
+
+
+            <button onclick="addMatch()">
+                Add Match
+            </button>
+
+
+            <div
+                id="adminMessage"
+                class="message"
+            ></div>
+
+
+            <hr>
+
+
+            <h3>
+                Manage Matches
+            </h3>
+
+
+            <div id="adminMatches">
+                No matches scheduled.
+            </div>
+
+            <hr>
+
+            <h3>Invite Players</h3>
+
+            <p>
+                Generate a one-time invite code and send it to a friend.
+            </p>
+
+            <button onclick="createInvite()">
+                Generate Invite Code
+            </button>
+
+            <div
+                id="newInvite"
+                class="message"
+            ></div>
+
+            <h4>Existing Invites</h4>
+
+            <div id="inviteList">
+                Loading invites...
+            </div>
+
+        </div>
+
+
+
+        <!-- LEADERBOARD -->
+
+        <div class="card">
+
+            <h2>🏆 Leaderboard</h2>
+
+            <div id="leaderboard">
+                Loading leaderboard...
+            </div>
+
+        </div>
+
+
+
+        <!-- PREDICTIONS -->
+
+        <div class="card">
+
+            <h2>Predictions</h2>
+
+            <p>
+                Pick the winner of each match before it starts.
+                Your picks remain hidden from other players until
+                the match is complete.
+            </p>
+
+
+            <div id="stagesContainer"></div>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+    // ============================================================
+    // SUPABASE CONFIGURATION
+    // ============================================================
+
+    const SUPABASE_URL =
+        "https://xgwpedhuszmwtiwibihq.supabase.co/";
+
+
+    const SUPABASE_PUBLISHABLE_KEY =
+        "sb_publishable_TGZRjOrdZ9yuDOTFHTOQJA_qxP1Dgh2";
+
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY
+        );
+
+
+
+    // ============================================================
+    // SIGN UP / INVITES
+    // ============================================================
+
+    function showSignup() {
+
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("signupCard").classList.remove("hidden");
+
+        document.getElementById("loginMessage").innerText = "";
+        document.getElementById("signupMessage").innerText = "";
+    }
+
+
+    function showLogin() {
+
+        document.getElementById("signupCard").classList.add("hidden");
+        document.getElementById("loginCard").classList.remove("hidden");
+
+        document.getElementById("signupMessage").innerText = "";
+    }
+
+
+    async function signup() {
+
+        const displayName =
+            document.getElementById("signupDisplayName").value.trim();
+
+        const email =
+            document.getElementById("signupEmail").value.trim();
+
+        const password =
+            document.getElementById("signupPassword").value;
+
+        const inviteCode =
+            document.getElementById("signupInviteCode")
+                .value.trim().toUpperCase();
+
+        const message =
+            document.getElementById("signupMessage");
+
+        message.innerText = "";
+
+        if (!displayName || !email || !password || !inviteCode) {
+            message.innerText = "Please complete all fields.";
+            return;
+        }
+
+        if (password.length < 6) {
+            message.innerText = "Password must be at least 6 characters.";
+            return;
+        }
+
+        localStorage.setItem(
+            "pendingInviteSignup",
+            JSON.stringify({
+                display_name: displayName,
+                invite_code: inviteCode
+            })
+        );
+
+        const { data, error } =
+            await supabaseClient.auth.signUp({
+                email: email,
+                password: password
+            });
+
+        if (error) {
+            localStorage.removeItem("pendingInviteSignup");
+            message.innerText = "Signup error: " + error.message;
+            console.error(error);
+            return;
+        }
+
+        if (data.session) {
+
+            const completed =
+                await finishPendingSignup();
+
+            if (completed) {
+                await loadApp();
+                return;
+            }
+        }
+
+        message.innerText =
+            "Account created. If email confirmation is required, " +
+            "confirm your email and then log in.";
+    }
+
+
+    async function finishPendingSignup() {
+
+        const pending =
+            localStorage.getItem("pendingInviteSignup");
+
+        if (!pending) {
+            return true;
+        }
+
+        let signupData;
+
+        try {
+            signupData = JSON.parse(pending);
+        } catch (error) {
+            console.error(error);
+            return false;
+        }
+
+        const { error } =
+            await supabaseClient.rpc(
+                "complete_signup",
+                {
+                    p_invite_code: signupData.invite_code,
+                    p_display_name: signupData.display_name
+                }
+            );
+
+        if (error) {
+            const message =
+                document.getElementById("signupMessage");
+
+            if (message) {
+                message.innerText =
+                    "Signup error: " + error.message;
+            }
+
+            console.error(error);
+            return false;
+        }
+
+        localStorage.removeItem("pendingInviteSignup");
+        return true;
+    }
+
+
+    async function createInvite() {
+
+        const { data, error } =
+            await supabaseClient.rpc("create_invite");
+
+        const output =
+            document.getElementById("newInvite");
+
+        if (error) {
+            output.innerText =
+                "Error creating invite: " + error.message;
+            console.error(error);
+            return;
+        }
+
+        output.innerHTML =
+            "New invite code:<div class=\"invite-code\">" +
+            data +
+            "</div>" +
+            "Send this code to the player. It can only be used once.";
+
+        await loadInvites();
+    }
+
+
+    async function loadInvites() {
+
+        const container =
+            document.getElementById("inviteList");
+
+        if (!container) {
+            return;
+        }
+
+        container.innerText = "Loading invites...";
+
+        const { data, error } =
+            await supabaseClient.rpc("get_invites");
+
+        if (error) {
+            container.innerText =
+                "Error loading invites: " + error.message;
+            console.error(error);
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            container.innerText = "No invites created yet.";
+            return;
+        }
+
+        container.innerHTML = "";
+
+        data.forEach(invite => {
+
+            const row = document.createElement("div");
+
+            row.className =
+                "invite-row" +
+                (invite.used_at ? " invite-row-used" : "");
+
+            const code = document.createElement("div");
+
+            code.className = "invite-code";
+            code.innerText = invite.code;
+
+            const status = document.createElement("div");
+
+            status.innerText =
+                invite.used_at
+                    ? "Used" +
+                      (invite.used_by_display_name
+                          ? " by " + invite.used_by_display_name
+                          : "")
+                    : "Available";
+
+            row.appendChild(code);
+            row.appendChild(status);
+            container.appendChild(row);
+        });
+    }
+
+
+    // ============================================================
+    // LOGIN
+    // ============================================================
+
+    async function login() {
+
+        const email =
+            document
+                .getElementById("email")
+                .value
+                .trim();
+
+
+        const password =
+            document
+                .getElementById("password")
+                .value;
+
+
+        const message =
+            document
+                .getElementById("loginMessage");
+
+
+        message.innerText = "";
+
+
+        if (!email || !password) {
+
+            message.innerText =
+                "Please enter your email and password.";
+
+            return;
+        }
+
+
+        const { data, error } =
+            await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+
+        if (error) {
+
+            message.innerText =
+                "Login error: " +
+                error.message;
+
+            console.error(error);
+
+            return;
+        }
+
+
+        console.log(
+            "Logged in:",
+            data.user
+        );
+
+
+        await loadApp();
+
+    }
+
+
+
+    // ============================================================
+    // LOGOUT
+    // ============================================================
+
+    async function logout() {
+
+        await supabaseClient.auth.signOut();
+
+
+        document
+            .getElementById("app")
+            .classList.add("hidden");
+
+
+        document
+            .getElementById("appHeader")
+            .classList.add("hidden");
+
+
+        document
+            .getElementById("loginCard")
+            .classList.remove("hidden");
+
+        document
+            .getElementById("signupCard")
+            .classList.add("hidden");
+
+
+        document
+            .getElementById("welcome")
+            .innerText = "";
+
+
+        document
+            .getElementById("stagesContainer")
+            .innerHTML = "";
+
+
+        document
+            .getElementById("adminSection")
+            .classList.add("hidden");
+
+    }
+
+
+
+    // ============================================================
+    // LOAD APP
+    // ============================================================
+
+    async function loadApp() {
+
+        const {
+            data: { user },
+            error: userError
+        } =
+            await supabaseClient.auth.getUser();
+
+
+        if (userError || !user) {
+
+            console.error(
+                "No authenticated user."
+            );
+
+            return;
+        }
+
+
+        // Load profile
+
+        const {
+            data: profile,
+            error: profileError
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select(
+                    "id, display_name, is_admin"
+                )
+                .eq("id", user.id)
+                .single();
+
+
+        if (profileError) {
+
+            const pendingInvite =
+                localStorage.getItem("pendingInviteSignup");
+
+            if (pendingInvite) {
+
+                const completed =
+                    await finishPendingSignup();
+
+                if (completed) {
+                    await loadApp();
+                    return;
+                }
+            }
+
+
+            document
+                .getElementById("loginMessage")
+                .innerText =
+                    "Profile error: " +
+                    profileError.message;
+
+            console.error(profileError);
+
+            return;
+        }
+
+
+        console.log(
+            "PROFILE:",
+            profile
+        );
+
+
+        // Update header
+
+        document
+            .getElementById("welcome")
+            .innerText =
+                "Welcome, " +
+                profile.display_name;
+
+
+        // Hide login and signup screens, then show the main app
+
+        document
+            .getElementById("loginCard")
+            .classList.add("hidden");
+
+        document
+            .getElementById("signupCard")
+            .classList.add("hidden");
+
+
+        document
+            .getElementById("appHeader")
+            .classList.remove("hidden");
+
+
+        document
+            .getElementById("app")
+            .classList.remove("hidden");
+
+
+        // Load player data
+
+        await loadLeaderboard();
+
+        await loadTournament();
+
+
+        // Load admin controls if applicable
+
+        if (profile.is_admin) {
+
+            await setupAdmin();
+
+        }
+
+    }
+
+
+
+    // ============================================================
+    // LOAD TOURNAMENT
+    // ============================================================
+
+    async function loadTournament() {
+
+        const stagesContainer =
+            document
+                .getElementById("stagesContainer");
+
+
+        stagesContainer.innerHTML =
+            "Loading matches...";
+
+
+        const {
+            data: { user },
+            error: userError
+        } =
+            await supabaseClient.auth.getUser();
+
+
+        if (userError || !user) {
+
+            stagesContainer.innerText =
+                "You must be logged in.";
+
+            return;
+        }
+
+
+
+        // Load stages
+
+        const {
+            data: stages,
+            error: stagesError
+        } =
+            await supabaseClient
+                .from("stages")
+                .select(
+                    "id, name, sort_order"
+                )
+                .order(
+                    "sort_order",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (stagesError) {
+
+            stagesContainer.innerText =
+                "Error loading stages: " +
+                stagesError.message;
+
+            console.error(stagesError);
+
+            return;
+        }
+
+
+
+        // Load matches
+
+        const {
+            data: matches,
+            error: matchesError
+        } =
+            await supabaseClient
+                .from("matches")
+                .select(`
+                    id,
+                    stage_id,
+                    team_1,
+                    team_2,
+                    scheduled_at,
+                    winner,
+                    status
+                `)
+                .order(
+                    "scheduled_at",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (matchesError) {
+
+            stagesContainer.innerText =
+                "Error loading matches: " +
+                matchesError.message;
+
+            console.error(matchesError);
+
+            return;
+        }
+
+
+
+        // Load this user's predictions
+
+        const {
+            data: predictions,
+            error: predictionsError
+        } =
+            await supabaseClient
+                .from("predictions")
+                .select(
+                    "match_id, predicted_winner"
+                )
+                .eq(
+                    "user_id",
+                    user.id
+                );
+
+
+        if (predictionsError) {
+
+            stagesContainer.innerText =
+                "Error loading predictions: " +
+                predictionsError.message;
+
+            console.error(predictionsError);
+
+            return;
+        }
+
+
+
+        // Create prediction lookup
+
+        const predictionMap = {};
+
+
+        predictions.forEach(
+            prediction => {
+
+                predictionMap[
+                    prediction.match_id
+                ] =
+                    prediction.predicted_winner;
+
+            }
+        );
+
+
+
+        console.log(
+            "STAGES:",
+            stages
+        );
+
+
+        console.log(
+            "MATCHES:",
+            matches
+        );
+
+
+        console.log(
+            "MY PREDICTIONS:",
+            predictionMap
+        );
+
+
+
+        stagesContainer.innerHTML = "";
+
+
+
+        // Create each stage
+
+        stages.forEach(stage => {
+
+            const stageMatches =
+                matches.filter(
+                    match =>
+                        match.stage_id ===
+                        stage.id
+                );
+
+
+            const stageCard =
+                document.createElement("div");
+
+
+            stageCard.className =
+                "card";
+
+
+            const heading =
+                document.createElement("h3");
+
+
+            heading.innerText =
+                stage.name;
+
+
+            stageCard.appendChild(
+                heading
+            );
+
+
+
+            if (stageMatches.length === 0) {
+
+                const empty =
+                    document.createElement("p");
+
+
+                empty.innerText =
+                    "No matches scheduled yet.";
+
+
+                empty.style.color =
+                    "#6b7280";
+
+
+                stageCard.appendChild(
+                    empty
+                );
+
+            }
+
+            else {
+
+                stageMatches.forEach(
+                    match => {
+
+                        stageCard.appendChild(
+                            createMatchElement(
+                                match,
+                                predictionMap[
+                                    match.id
+                                ]
+                            )
+                        );
+
+                    }
+                );
+
+            }
+
+
+            stagesContainer.appendChild(
+                stageCard
+            );
+
+        });
+
+    }
+
+
+
+    // ============================================================
+    // CREATE MATCH CARD
+    // ============================================================
+
+    function createMatchElement(
+        match,
+        myPrediction
+    ) {
+
+        const div =
+            document.createElement("div");
+
+
+        div.className =
+            "match";
+
+
+
+        // Match time
+
+        const scheduledDate =
+            new Date(
+                match.scheduled_at
+            );
+
+
+        const now =
+            new Date();
+
+
+        const matchStarted =
+            now >= scheduledDate;
+
+
+
+        const timeText =
+            scheduledDate.toLocaleString(
+                "en-US",
+                {
+                    timeZone:
+                        "America/New_York",
+
+                    month:
+                        "numeric",
+
+                    day:
+                        "numeric",
+
+                    year:
+                        "numeric",
+
+                    hour:
+                        "numeric",
+
+                    minute:
+                        "2-digit",
+
+                    timeZoneName:
+                        "short"
+                }
+            );
+
+
+
+        const info =
+            document.createElement("div");
+
+
+        info.className =
+            "match-info";
+
+
+        info.innerText =
+            "Prediction deadline: " +
+            timeText;
+
+
+        div.appendChild(info);
+
+
+
+        // Teams
+
+        const teams =
+            document.createElement("div");
+
+
+        teams.className =
+            "teams";
+
+
+
+        const team1 =
+            document.createElement("button");
+
+
+        team1.className =
+            "team-button";
+
+
+        team1.innerText =
+            match.team_1;
+
+
+
+        const vs =
+            document.createElement("div");
+
+
+        vs.className =
+            "vs";
+
+
+        vs.innerText =
+            "VS";
+
+
+
+        const team2 =
+            document.createElement("button");
+
+
+        team2.className =
+            "team-button";
+
+
+        team2.innerText =
+            match.team_2;
+
+
+
+        teams.appendChild(team1);
+
+        teams.appendChild(vs);
+
+        teams.appendChild(team2);
+
+
+        div.appendChild(teams);
+
+
+
+        // ========================================================
+        // COMPLETED MATCH
+        // ========================================================
+
+        if (
+            match.status ===
+            "complete"
+        ) {
+
+            team1.disabled = true;
+
+            team2.disabled = true;
+
+
+            if (
+                match.winner ===
+                match.team_1
+            ) {
+
+                team1.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+            if (
+                match.winner ===
+                match.team_2
+            ) {
+
+                team2.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+
+            const result =
+                document.createElement("div");
+
+
+            result.className =
+                "result";
+
+
+            result.innerText =
+                "Winner: " +
+                match.winner;
+
+
+            div.appendChild(result);
+
+
+
+            if (myPrediction) {
+
+                const prediction =
+                    document.createElement("div");
+
+
+                prediction.className =
+                    "points";
+
+
+                prediction.innerText =
+                    "Your prediction: " +
+                    myPrediction;
+
+
+                div.appendChild(
+                    prediction
+                );
+
+            }
+
+
+            return div;
+
+        }
+
+
+
+        // ========================================================
+        // LOCKED MATCH
+        // ========================================================
+
+        if (matchStarted) {
+
+            team1.disabled = true;
+
+            team2.disabled = true;
+
+
+
+            if (
+                myPrediction ===
+                match.team_1
+            ) {
+
+                team1.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+            if (
+                myPrediction ===
+                match.team_2
+            ) {
+
+                team2.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+
+            const locked =
+                document.createElement("div");
+
+
+            locked.className =
+                "points";
+
+
+            locked.innerText =
+                "🔒 Predictions are locked.";
+
+
+            div.appendChild(locked);
+
+
+
+            if (myPrediction) {
+
+                const prediction =
+                    document.createElement("div");
+
+
+                prediction.className =
+                    "points";
+
+
+                prediction.innerText =
+                    "Your prediction: " +
+                    myPrediction;
+
+
+                div.appendChild(
+                    prediction
+                );
+
+            }
+
+
+            return div;
+
+        }
+
+
+
+        // ========================================================
+        // UPCOMING MATCH
+        // ========================================================
+
+        if (
+            myPrediction ===
+            match.team_1
+        ) {
+
+            team1.classList.add(
+                "selected"
+            );
+
+        }
+
+
+        if (
+            myPrediction ===
+            match.team_2
+        ) {
+
+            team2.classList.add(
+                "selected"
+            );
+
+        }
+
+
+
+        if (myPrediction) {
+
+            const prediction =
+                document.createElement("div");
+
+
+            prediction.className =
+                "points";
+
+
+            prediction.innerText =
+                "Your prediction: " +
+                myPrediction;
+
+
+            div.appendChild(
+                prediction
+            );
+
+        }
+
+
+
+        team1.onclick = () =>
+            selectTeam(
+                match,
+                team1,
+                team2,
+                match.team_1
+            );
+
+
+        team2.onclick = () =>
+            selectTeam(
+                match,
+                team2,
+                team1,
+                match.team_2
+            );
+
+
+        return div;
+
+    }
+
+
+
+    // ============================================================
+    // SELECT TEAM
+    // ============================================================
+
+    function selectTeam(
+        match,
+        selectedButton,
+        otherButton,
+        team
+    ) {
+
+        selectedButton.classList.add(
+            "selected"
+        );
+
+
+        otherButton.classList.remove(
+            "selected"
+        );
+
+
+
+        const matchElement =
+            selectedButton.closest(
+                ".match"
+            );
+
+
+        const existingButton =
+            matchElement.querySelector(
+                ".submit-button"
+            );
+
+
+        if (existingButton) {
+
+            existingButton.remove();
+
+        }
+
+
+
+        const submitButton =
+            document.createElement(
+                "button"
+            );
+
+
+        submitButton.className =
+            "submit-button";
+
+
+        submitButton.innerText =
+            "Submit Prediction";
+
+
+        submitButton.onclick = () =>
+            submitPrediction(
+                match.id,
+                team
+            );
+
+
+        matchElement.appendChild(
+            submitButton
+        );
+
+    }
+
+
+
+    // ============================================================
+    // SUBMIT PREDICTION
+    // ============================================================
+
+    async function submitPrediction(
+        matchId,
+        predictedWinner
+    ) {
+
+        const {
+            data: { user },
+            error: userError
+        } =
+            await supabaseClient.auth.getUser();
+
+
+        if (
+            userError ||
+            !user
+        ) {
+
+            alert(
+                "You must be logged in."
+            );
+
+            return;
+        }
+
+
+
+        const { error } =
+            await supabaseClient
+                .from("predictions")
+                .upsert(
+                    {
+                        user_id:
+                            user.id,
+
+                        match_id:
+                            matchId,
+
+                        predicted_winner:
+                            predictedWinner,
+
+                        updated_at:
+                            new Date()
+                                .toISOString()
+                    },
+                    {
+                        onConflict:
+                            "user_id,match_id"
+                    }
+                );
+
+
+
+        if (error) {
+
+            alert(
+                "Prediction error: " +
+                error.message
+            );
+
+            console.error(error);
+
+            return;
+        }
+
+
+
+        alert(
+            "Prediction submitted: " +
+            predictedWinner
+        );
+
+
+        await loadTournament();
+
+    }
+
+
+
+    // ============================================================
+    // LEADERBOARD
+    // ============================================================
+
+    async function loadLeaderboard() {
+
+        const leaderboard =
+            document.getElementById(
+                "leaderboard"
+            );
+
+
+        leaderboard.innerHTML =
+            "Loading leaderboard...";
+
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .rpc(
+                    "get_leaderboard"
+                );
+
+
+        if (error) {
+
+            leaderboard.innerText =
+                "Error loading leaderboard: " +
+                error.message;
+
+            console.error(error);
+
+            return;
+        }
+
+
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            leaderboard.innerText =
+                "No players yet.";
+
+            return;
+        }
+
+
+
+        leaderboard.innerHTML =
+            "";
+
+
+
+        data.forEach(
+            (player, index) => {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "leaderboard-row";
+
+
+
+                const name =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                name.innerText =
+                    (index + 1) +
+                    ". " +
+                    player.display_name;
+
+
+
+                const points =
+                    document.createElement(
+                        "strong"
+                    );
+
+
+                points.innerText =
+                    player.total_points +
+                    " pts";
+
+
+
+                row.appendChild(name);
+
+                row.appendChild(points);
+
+
+                leaderboard.appendChild(
+                    row
+                );
+
+            }
+        );
+
+    }
+
+
+
+    // ============================================================
+    // ADMIN SETUP
+    // ============================================================
+
+    async function setupAdmin() {
+
+		const {
+			data: { user }
+		} = await supabaseClient.auth.getUser();
+
+		if (!user) {
+			return;
+		}
+
+		// Check whether the current user is an admin
+		const { data: profile, error: profileError } =
+			await supabaseClient
+				.from("profiles")
+				.select("is_admin")
+				.eq("id", user.id)
+				.single();
+
+		if (profileError) {
+			console.error("Admin profile error:", profileError);
+			return;
+		}
+
+		if (!profile.is_admin) {
+			return;
+		}
+
+		// Show admin section
+		document
+			.getElementById("adminSection")
+			.classList.remove("hidden");
+
+		// Load stages into dropdown
+		const { data: stages, error: stagesError } =
+			await supabaseClient
+				.from("stages")
+				.select("id, name, sort_order")
+				.order("sort_order");
+
+		if (stagesError) {
+			console.error("Stage loading error:", stagesError);
+			return;
+		}
+
+		const stageSelect =
+			document.getElementById("matchStage");
+
+		stageSelect.innerHTML =
+			'<option value="">Select stage</option>';
+
+		stages.forEach(stage => {
+
+			const option =
+				document.createElement("option");
+
+			option.value = stage.id;
+			option.innerText = stage.name;
+
+			stageSelect.appendChild(option);
+
+		});
+
+		await loadAdminMatches();
+
+}
+
+
+
+    // ============================================================
+    // LOAD ADMIN MATCHES
+    // ============================================================
+
+	async function loadAdminMatches() {
+
+		const container =
+			document.getElementById("adminMatches");
+
+		container.innerHTML =
+			"Loading matches...";
+
+		const { data: matches, error } =
+			await supabaseClient
+				.from("matches")
+				.select(`
+					id,
+					stage_id,
+					team_1,
+					team_2,
+					scheduled_at,
+					winner,
+					status
+				`)
+				.order("scheduled_at", {
+					ascending: true
+				});
+
+		if (error) {
+
+			container.innerText =
+				"Error loading matches: " +
+				error.message;
+
+			console.error(error);
+
+			return;
+		}
+
+		if (!matches || matches.length === 0) {
+
+			container.innerText =
+				"No matches scheduled.";
+
+			return;
+		}
+
+		container.innerHTML = "";
+
+		matches.forEach(match => {
+
+			const matchDiv =
+				document.createElement("div");
+
+			matchDiv.className = "match";
+
+			// ========================================================
+			// MATCH TITLE
+			// ========================================================
+
+			const title =
+				document.createElement("h4");
+
+			title.innerText =
+				match.team_1 +
+				" vs " +
+				match.team_2;
+
+			matchDiv.appendChild(title);
+
+			// ========================================================
+			// MATCH TIME
+			// ========================================================
+
+			const date =
+				new Date(match.scheduled_at);
+
+			const time =
+				document.createElement("div");
+
+			time.className = "match-info";
+
+			time.innerText =
+				date.toLocaleString("en-US", {
+					timeZone: "America/New_York",
+					month: "numeric",
+					day: "numeric",
+					year: "numeric",
+					hour: "numeric",
+					minute: "2-digit",
+					timeZoneName: "short"
+				});
+
+			matchDiv.appendChild(time);
+
+			// ========================================================
+			// STATUS
+			// ========================================================
+
+			const status =
+				document.createElement("div");
+
+			status.className = "points";
+
+			status.innerText =
+				"Status: " +
+				match.status;
+
+			matchDiv.appendChild(status);
+
+			// ========================================================
+			// COMPLETED MATCH
+			// ========================================================
+
+			if (match.status === "complete") {
+
+				const winner =
+					document.createElement("div");
+
+				winner.className = "result";
+
+				winner.innerText =
+					"Winner: " +
+					match.winner;
+
+				matchDiv.appendChild(winner);
+
+				container.appendChild(matchDiv);
+
+				return;
+			}
+
+			// ========================================================
+			// EDIT BUTTON
+			// ========================================================
+
+			const editButton =
+				document.createElement("button");
+
+			editButton.innerText =
+				"Edit";
+
+			editButton.style.marginRight =
+				"8px";
+
+			editButton.onclick = () =>
+				editMatch(match);
+
+			matchDiv.appendChild(editButton);
+
+			// ========================================================
+			// DELETE BUTTON
+			// ========================================================
+
+			const deleteButton =
+				document.createElement("button");
+
+			deleteButton.innerText =
+				"Delete";
+
+			deleteButton.className =
+				"secondary";
+
+			deleteButton.onclick = () =>
+				deleteMatch(match);
+
+			matchDiv.appendChild(deleteButton);
+
+			// ========================================================
+			// COMPLETE MATCH
+			// ========================================================
+
+			const winnerLabel =
+				document.createElement("label");
+
+			winnerLabel.innerText =
+				"Winner";
+
+			winnerLabel.style.display =
+				"block";
+
+			winnerLabel.style.marginTop =
+				"15px";
+
+			matchDiv.appendChild(winnerLabel);
+
+			const winnerSelect =
+				document.createElement("select");
+
+			winnerSelect.style.marginTop =
+				"6px";
+
+			const placeholder =
+				document.createElement("option");
+
+			placeholder.value = "";
+
+			placeholder.innerText =
+				"Select winner";
+
+			winnerSelect.appendChild(
+				placeholder
+			);
+
+			[match.team_1, match.team_2]
+				.forEach(team => {
+
+					const option =
+						document.createElement("option");
+
+					option.value = team;
+					option.innerText = team;
+
+					winnerSelect.appendChild(
+						option
+					);
+
+				});
+
+			matchDiv.appendChild(
+				winnerSelect
+			);
+
+			const completeButton =
+				document.createElement("button");
+
+			completeButton.innerText =
+				"Complete Match";
+
+			completeButton.style.marginTop =
+				"10px";
+
+			completeButton.onclick =
+				async function () {
+
+					const selectedWinner =
+						winnerSelect.value;
+
+					if (!selectedWinner) {
+
+						alert(
+							"Please select the winning team."
+						);
+
+						return;
+					}
+
+					const confirmed =
+						confirm(
+							"Complete " +
+							match.team_1 +
+							" vs " +
+							match.team_2 +
+							" with " +
+							selectedWinner +
+							" as the winner?"
+						);
+
+					if (!confirmed) {
+						return;
+					}
+
+					completeButton.disabled =
+						true;
+
+					completeButton.innerText =
+						"Completing...";
+
+					const { error } =
+						await supabaseClient
+							.rpc(
+								"complete_match",
+								{
+									p_match_id:
+										match.id,
+									p_winner:
+										selectedWinner
+								}
+							);
+
+					if (error) {
+
+						console.error(error);
+
+						alert(
+							"Error completing match: " +
+							error.message
+						);
+
+						completeButton.disabled =
+							false;
+
+						completeButton.innerText =
+							"Complete Match";
+
+						return;
+					}
+
+					alert(
+						"Match completed successfully!"
+					);
+
+					await loadTournament();
+					await loadLeaderboard();
+					await loadAdminMatches();
+
+				};
+
+			matchDiv.appendChild(
+				completeButton
+			);
+
+			container.appendChild(
+				matchDiv
+			);
+
+		});
+
+	}
+
+	function easternTimeToUTC(dateTimeLocal) {
+
+		// dateTimeLocal looks like:
+		// 2026-09-18T12:11
+
+		const [datePart, timePart] =
+			dateTimeLocal.split("T");
+
+		const [year, month, day] =
+			datePart.split("-").map(Number);
+
+		const [hour, minute] =
+			timePart.split(":").map(Number);
+
+		// Start with the requested time interpreted as UTC.
+		const approximateUTC =
+			new Date(
+				Date.UTC(
+					year,
+					month - 1,
+					day,
+					hour,
+					minute
+				)
+			);
+
+		// Determine the Eastern Time offset for that date.
+		const easternParts =
+			new Intl.DateTimeFormat("en-US", {
+				timeZone: "America/New_York",
+				timeZoneName: "shortOffset",
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hourCycle: "h23"
+			}).formatToParts(approximateUTC);
+
+		const offsetPart =
+			easternParts.find(
+				part => part.type === "timeZoneName"
+			);
+
+		const offsetText =
+			offsetPart
+				? offsetPart.value
+				: "GMT-4";
+
+		// Extract the numeric offset.
+		const match =
+			offsetText.match(
+				/GMT([+-])(\d{1,2})(?::(\d{2}))?/
+			);
+
+		let offsetMinutes = -240;
+
+		if (match) {
+
+			const sign =
+				match[1] === "+" ? 1 : -1;
+
+			const hours =
+				Number(match[2]);
+
+			const minutes =
+				match[3]
+					? Number(match[3])
+					: 0;
+
+			offsetMinutes =
+				sign * (hours * 60 + minutes);
+		}
+
+		// Convert Eastern Time to UTC.
+		return new Date(
+			approximateUTC.getTime()
+			- offsetMinutes * 60 * 1000
+		);
+	}
+
+    // ============================================================
+    // EDIT MATCH
+    // ============================================================
+
+    async function editMatch(match) {
+
+        const newTeam1 = prompt("Team 1:", match.team_1);
+        if (newTeam1 === null) return;
+
+        const newTeam2 = prompt("Team 2:", match.team_2);
+        if (newTeam2 === null) return;
+
+        if (!newTeam1.trim() || !newTeam2.trim()) {
+            alert("Team names cannot be blank.");
+            return;
+        }
+
+        const currentDate = new Date(match.scheduled_at);
+
+        const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hourCycle: "h23"
+        }).formatToParts(currentDate);
+
+        const values = {};
+        parts.forEach(part => {
+            if (part.type !== "literal") {
+                values[part.type] = part.value;
+            }
+        });
+
+        const currentDateTime =
+            values.year + "-" +
+            values.month + "-" +
+            values.day + "T" +
+            values.hour + ":" +
+            values.minute;
+
+        const newDateTime = prompt(
+            "Match time (Eastern Time):",
+            currentDateTime
+        );
+
+        if (newDateTime === null) return;
+
+        const scheduledAt = easternTimeToUTC(newDateTime);
+
+        if (!scheduledAt) {
+            alert("Invalid match date/time.");
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from("matches")
+            .update({
+                team_1: newTeam1.trim(),
+                team_2: newTeam2.trim(),
+                scheduled_at: scheduledAt.toISOString()
+            })
+            .eq("id", match.id);
+
+        if (error) {
+            console.error(error);
+            alert("Error updating match: " + error.message);
+            return;
+        }
+
+        alert("Match updated successfully!");
+        await loadTournament();
+        await loadAdminMatches();
+    }
+
+
+    // ============================================================
+    // DELETE MATCH
+    // ============================================================
+
+    async function deleteMatch(match) {
+
+        const confirmed = confirm(
+            "Are you sure you want to delete " +
+            match.team_1 + " vs " + match.team_2 + "?"
+        );
+
+        if (!confirmed) return;
+
+        const { error } = await supabaseClient
+            .from("matches")
+            .delete()
+            .eq("id", match.id);
+
+        if (error) {
+            console.error(error);
+            alert("Error deleting match: " + error.message);
+            return;
+        }
+
+        alert("Match deleted successfully!");
+        await loadTournament();
+        await loadLeaderboard();
+        await loadAdminMatches();
+    }
+
+
+    // ============================================================
+    // ADD MATCH
+    // ============================================================
+
+    async function addMatch() {
+
+        const stageId =
+            document
+                .getElementById(
+                    "matchStage"
+                )
+                .value;
+
+
+        const team1 =
+            document
+                .getElementById(
+                    "team1"
+                )
+                .value
+                .trim();
+
+
+        const team2 =
+            document
+                .getElementById(
+                    "team2"
+                )
+                .value
+                .trim();
+
+
+        const matchTime =
+            document
+                .getElementById(
+                    "matchTime"
+                )
+                .value;
+
+
+        const message =
+            document
+                .getElementById(
+                    "adminMessage"
+                );
+
+
+        message.innerText =
+            "";
+
+
+
+        if (
+            !stageId ||
+            !team1 ||
+            !team2 ||
+            !matchTime
+        ) {
+
+            message.innerText =
+                "Please complete all fields.";
+
+            return;
+        }
+
+
+
+        /*
+         * datetime-local does not contain a timezone.
+         *
+         * We want the value entered here to always mean
+         * Eastern Time.
+         *
+         * This conversion determines the correct UTC offset
+         * for the selected date, including EST/EDT.
+         */
+
+        const scheduledAt =
+            easternTimeToUTC(
+                matchTime
+            );
+
+
+
+        if (!scheduledAt) {
+
+            message.innerText =
+                "Invalid match date/time.";
+
+            return;
+        }
+
+
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("matches")
+                .insert(
+                    {
+                        stage_id:
+                            Number(stageId),
+
+                        team_1:
+                            team1,
+
+                        team_2:
+                            team2,
+
+                        scheduled_at:
+                            scheduledAt,
+
+                        status:
+                            "upcoming"
+                    }
+                );
+
+
+
+        if (error) {
+
+            message.innerText =
+                "Error adding match: " +
+                error.message;
+
+            console.error(error);
+
+            return;
+        }
+
+
+
+        message.innerText =
+            "Match added successfully!";
+
+
+
+        document
+            .getElementById("team1")
+            .value = "";
+
+
+        document
+            .getElementById("team2")
+            .value = "";
+
+
+        document
+            .getElementById("matchTime")
+            .value = "";
+
+
+        document
+            .getElementById("matchStage")
+            .value = "";
+
+
+
+        await loadTournament();
+
+        await loadAdminMatches();
+
+    }
+
+
+
+    // ============================================================
+    // EASTERN TIME → UTC
+    
+
+    // ============================================================
+    // CHECK EXISTING SESSION
+    // ============================================================
+
+    async function checkSession() {
+
+        const {
+            data: { session }
+        } =
+            await supabaseClient
+                .auth.getSession();
+
+
+        if (session) {
+
+            await loadApp();
+
+        }
+
+    }
+
+
+
+    // ============================================================
+    // START APPLICATION
+    // ============================================================
+
+    checkSession();
+
+
+</script>
+
+
+</body>
+
+</html>
