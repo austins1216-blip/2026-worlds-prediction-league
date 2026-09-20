@@ -1185,8 +1185,9 @@
 
 
 
-        // Load this user's predictions
-
+        // Load predictions visible under RLS.
+        // Before a match starts, only the current player's pick is returned.
+        // Once a match starts, all players' picks are returned.
         const {
             data: predictions,
             error: predictionsError
@@ -1194,11 +1195,7 @@
             await supabaseClient
                 .from("predictions")
                 .select(
-                    "match_id, predicted_winner"
-                )
-                .eq(
-                    "user_id",
-                    user.id
+                    "user_id, match_id, predicted_winner"
                 );
 
 
@@ -1215,22 +1212,48 @@
 
 
 
-        // Create prediction lookup
-
+        // Build lookups for the current player's pick and all visible picks.
         const predictionMap = {};
+        const predictionsByMatch = {};
 
-
-        predictions.forEach(
-            prediction => {
-
-                predictionMap[
-                    prediction.match_id
-                ] =
+        predictions.forEach(prediction => {
+            if (prediction.user_id === user.id) {
+                predictionMap[prediction.match_id] =
                     prediction.predicted_winner;
-
             }
-        );
 
+            if (!predictionsByMatch[prediction.match_id]) {
+                predictionsByMatch[prediction.match_id] = [];
+            }
+
+            predictionsByMatch[prediction.match_id].push(prediction);
+        });
+
+        // Load player display names for the revealed-picks list.
+        const {
+            data: profiles,
+            error: profilesError
+        } =
+            await supabaseClient
+                .from("profiles")
+                .select("id, display_name");
+
+        if (profilesError) {
+            stagesContainer.innerText =
+                "Error loading players: " +
+                profilesError.message;
+
+            console.error(profilesError);
+            return;
+        }
+
+        const profileMap = {};
+
+        (profiles || []).forEach(profile => {
+            // Normalize UUIDs to strings so they match prediction.user_id.
+            profileMap[String(profile.id)] =
+                profile.display_name;
+        });
 
 
         console.log(
@@ -1276,18 +1299,34 @@
                 "card";
 
 
+            // Stage header with expand/collapse button
+
+            const stageHeader =
+                document.createElement("div");
+
+            stageHeader.style.display = "flex";
+            stageHeader.style.justifyContent = "space-between";
+            stageHeader.style.alignItems = "center";
+            stageHeader.style.gap = "10px";
+            stageHeader.style.marginBottom = "10px";
+
+
             const heading =
                 document.createElement("h3");
-
 
             heading.innerText =
                 stage.name;
 
+            heading.style.margin = "0";
 
-            stageCard.appendChild(
+
+            stageHeader.appendChild(
                 heading
             );
 
+
+            const stageContent =
+                document.createElement("div");
 
 
             if (stageMatches.length === 0) {
@@ -1295,32 +1334,60 @@
                 const empty =
                     document.createElement("p");
 
-
                 empty.innerText =
                     "No matches scheduled yet.";
-
 
                 empty.style.color =
                     "#6b7280";
 
-
-                stageCard.appendChild(
+                stageContent.appendChild(
                     empty
+                );
+
+                stageHeader.appendChild(
+                    document.createElement("span")
                 );
 
             }
 
             else {
 
+                const toggleButton =
+                    document.createElement("button");
+
+                toggleButton.className = "secondary";
+                toggleButton.innerText =
+                    "Show matches (" + stageMatches.length + ")";
+                toggleButton.style.margin = "0";
+                toggleButton.style.whiteSpace = "nowrap";
+
+                toggleButton.onclick = function () {
+
+                    const isHidden =
+                        stageContent.style.display === "none";
+
+                    stageContent.style.display =
+                        isHidden ? "block" : "none";
+
+                    toggleButton.innerText =
+                        isHidden
+                            ? "Hide matches (" + stageMatches.length + ")"
+                            : "Show matches (" + stageMatches.length + ")";
+                };
+
+                stageHeader.appendChild(
+                    toggleButton
+                );
+
                 stageMatches.forEach(
                     match => {
 
-                        stageCard.appendChild(
+                        stageContent.appendChild(
                             createMatchElement(
                                 match,
-                                predictionMap[
-                                    match.id
-                                ]
+                                predictionMap[match.id],
+                                predictionsByMatch[match.id] || [],
+                                profileMap
                             )
                         );
 
@@ -1328,6 +1395,19 @@
                 );
 
             }
+
+
+            stageCard.appendChild(
+                stageHeader
+            );
+
+            // Stages with matches start collapsed to keep the page compact.
+            stageContent.style.display =
+                stageMatches.length === 0 ? "block" : "none";
+
+            stageCard.appendChild(
+                stageContent
+            );
 
 
             stagesContainer.appendChild(
@@ -1346,7 +1426,9 @@
 
     function createMatchElement(
         match,
-        myPrediction
+        myPrediction,
+        visiblePredictions,
+        profileMap
     ) {
 
         const div =
@@ -1560,10 +1642,102 @@
             }
 
 
+            addRevealedPicks(
+                div,
+                visiblePredictions,
+                profileMap
+            );
+
+
             return div;
 
         }
 
+
+
+        // ========================================================
+        // DISPLAY REVEALED PICKS
+        // ========================================================
+
+        function addRevealedPicks(
+            div,
+            visiblePredictions,
+            profileMap
+        ) {
+            // Create a button so revealed picks can be expanded/collapsed.
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "secondary";
+            toggle.style.marginTop = "12px";
+            toggle.innerText =
+                "Show player picks" +
+                (visiblePredictions.length
+                    ? " (" + visiblePredictions.length + ")"
+                    : "");
+
+            div.appendChild(toggle);
+
+            const picksContainer = document.createElement("div");
+            picksContainer.style.display = "none";
+            picksContainer.style.marginTop = "8px";
+            div.appendChild(picksContainer);
+
+            toggle.addEventListener("click", () => {
+                const isHidden =
+                    picksContainer.style.display === "none";
+
+                picksContainer.style.display =
+                    isHidden ? "block" : "none";
+
+                toggle.innerText = isHidden
+                    ? "Hide player picks"
+                    : "Show player picks" +
+                      (visiblePredictions.length
+                          ? " (" + visiblePredictions.length + ")"
+                          : "");
+            });
+
+            if (!visiblePredictions.length) {
+                const none = document.createElement("div");
+                none.className = "points";
+                none.innerText = "No predictions submitted.";
+                picksContainer.appendChild(none);
+                return;
+            }
+
+            const title = document.createElement("div");
+            title.className = "points";
+            title.innerText = "Player picks:";
+            picksContainer.appendChild(title);
+
+            visiblePredictions
+                .slice()
+                .sort((a, b) => {
+                    const nameA =
+                        profileMap[String(a.user_id)] ||
+                        "Unknown player";
+                    const nameB =
+                        profileMap[String(b.user_id)] ||
+                        "Unknown player";
+
+                    return nameA.localeCompare(nameB);
+                })
+                .forEach(prediction => {
+                    const row = document.createElement("div");
+                    row.className = "points";
+
+                    const playerName =
+                        profileMap[String(prediction.user_id)] ||
+                        "Unknown player";
+
+                    row.innerText =
+                        playerName +
+                        ": " +
+                        prediction.predicted_winner;
+
+                    picksContainer.appendChild(row);
+                });
+        }
 
 
         // ========================================================
@@ -1639,6 +1813,13 @@
                 );
 
             }
+
+
+            addRevealedPicks(
+                div,
+                visiblePredictions,
+                profileMap
+            );
 
 
             return div;
