@@ -581,6 +581,18 @@
 
 
 
+        <!-- PREDICTION STATUS DASHBOARD -->
+
+        <div class="card">
+
+            <h2>📋 Prediction Status</h2>
+            <p>See who has submitted a pick for each upcoming match. This shows submission status only, not the selected team.</p>
+            <div id="predictionDashboard">Loading prediction status...</div>
+            <button class="secondary" onclick="loadPredictionDashboard()">Refresh status</button>
+
+        </div>
+
+
         <!-- PREDICTIONS -->
 
         <div class="card">
@@ -1069,6 +1081,8 @@
         await loadLeaderboard();
 
         await loadTournament();
+
+        await loadPredictionDashboard();
 
 
         // Load admin controls if applicable
@@ -2050,7 +2064,130 @@
 
 
         await loadTournament();
+        await loadPredictionDashboard();
 
+    }
+
+
+
+    // ============================================================
+    // PREDICTION STATUS DASHBOARD
+    // ============================================================
+
+    async function loadPredictionDashboard() {
+        const container = document.getElementById("predictionDashboard");
+        if (!container) return;
+        container.innerText = "Loading prediction status...";
+
+        const { data, error } = await supabaseClient.rpc("get_prediction_status");
+        if (error) {
+            container.innerText = "Dashboard setup required. Run the SQL provided with this HTML, then refresh. Details: " + error.message;
+            console.error("Prediction dashboard error:", error);
+            return;
+        }
+
+        const rows = data || [];
+        const matches = {};
+        const players = new Set();
+        rows.forEach(row => {
+            players.add(row.display_name);
+            if (!matches[String(row.match_id)]) {
+                matches[String(row.match_id)] = {
+                    id: row.match_id,
+                    stage: row.stage_name,
+                    team1: row.team_1,
+                    team2: row.team_2,
+                    scheduledAt: row.scheduled_at,
+                    players: {}
+                };
+            }
+            matches[String(row.match_id)].players[row.display_name] = row.has_prediction;
+        });
+
+        const playerNames = Array.from(players).sort((a, b) => a.localeCompare(b));
+        const matchRows = Object.values(matches).sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+        if (!matchRows.length) {
+            container.innerText = "No upcoming matches found.";
+            return;
+        }
+
+        const totalSlots = matchRows.length * playerNames.length;
+        let submittedTotal = 0;
+        matchRows.forEach(match => playerNames.forEach(name => { if (match.players[name]) submittedTotal++; }));
+
+        const summary = document.createElement("p");
+        summary.style.fontWeight = "600";
+        summary.innerText = "" + submittedTotal + " of " + totalSlots + " predictions submitted across " + matchRows.length + " upcoming matches.";
+        container.innerHTML = "";
+        container.appendChild(summary);
+
+        const wrapper = document.createElement("div");
+        wrapper.style.overflowX = "auto";
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.borderCollapse = "collapse";
+        table.style.fontSize = "14px";
+
+        const thead = document.createElement("thead");
+        const header = document.createElement("tr");
+        ["Upcoming match", ...playerNames, "Submitted"].forEach(label => {
+            const th = document.createElement("th");
+            th.innerText = label;
+            th.style.textAlign = "left";
+            th.style.padding = "10px 8px";
+            th.style.borderBottom = "2px solid #d1d5db";
+            th.style.whiteSpace = "nowrap";
+            header.appendChild(th);
+        });
+        thead.appendChild(header);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        matchRows.forEach(match => {
+            const tr = document.createElement("tr");
+            const matchCell = document.createElement("td");
+            matchCell.style.padding = "10px 8px";
+            matchCell.style.borderBottom = "1px solid #e5e7eb";
+            matchCell.style.minWidth = "170px";
+            const date = new Date(match.scheduledAt).toLocaleString("en-US", {
+                timeZone: "America/New_York", month: "short", day: "numeric",
+                hour: "numeric", minute: "2-digit", timeZoneName: "short"
+            });
+            matchCell.innerText = match.team1 + " vs " + match.team2 + "\n" + match.stage + " · " + date;
+            matchCell.style.whiteSpace = "pre-line";
+            tr.appendChild(matchCell);
+
+            let submitted = 0;
+            playerNames.forEach(name => {
+                const td = document.createElement("td");
+                td.style.padding = "10px 8px";
+                td.style.textAlign = "center";
+                td.style.borderBottom = "1px solid #e5e7eb";
+                const done = Boolean(match.players[name]);
+                if (done) submitted++;
+                td.innerText = done ? "✓" : "—";
+                td.style.color = done ? "#15803d" : "#b45309";
+                td.style.fontWeight = "700";
+                td.setAttribute("aria-label", name + (done ? " submitted" : " missing"));
+                tr.appendChild(td);
+            });
+            const status = document.createElement("td");
+            status.style.padding = "10px 8px";
+            status.style.borderBottom = "1px solid #e5e7eb";
+            status.style.whiteSpace = "nowrap";
+            status.innerText = submitted + "/" + playerNames.length;
+            tr.appendChild(status);
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+        container.appendChild(wrapper);
+
+        const legend = document.createElement("p");
+        legend.style.fontSize = "12px";
+        legend.style.color = "#6b7280";
+        legend.innerText = "✓ Submitted · — Not submitted. This table never shows the predicted team.";
+        container.appendChild(legend);
     }
 
 
