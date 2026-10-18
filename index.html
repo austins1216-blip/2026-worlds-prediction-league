@@ -118,6 +118,11 @@
             background: #6b7280;
         }
 
+        button.filter-selected {
+            background: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+
         button.danger {
             background: #dc2626;
         }
@@ -536,6 +541,11 @@
             </h3>
 
 
+            <div style="margin: 12px 0;">
+                <button id="toggleAdminCompletedMatchesButton" class="secondary" onclick="toggleAdminCompletedMatches()">
+                    Show completed matches
+                </button>
+            </div>
             <div id="adminMatches">
                 No matches scheduled.
             </div>
@@ -606,6 +616,18 @@
             </p>
 
 
+            <div style="margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px;">
+                <button id="showRecentCompletedMatchesButton" class="secondary" onclick="toggleCompletedMatchFilter('recent')">
+                    Show recent completed matches
+                </button>
+                <button id="showAllCompletedMatchesButton" class="secondary" onclick="toggleCompletedMatchFilter('all')">
+                    Show all completed matches
+                </button>
+            </div>
+            <p style="font-size: 13px; color: #6b7280; margin: 6px 0 12px;">
+                Select either button to show completed matches. Select the active button again to hide them, or leave both unselected to hide all completed matches.
+                “Recent” includes matches scheduled within the last 30 hours.
+            </p>
             <div id="stagesContainer"></div>
 
         </div>
@@ -1097,6 +1119,15 @@
 
 
 
+    // Completed matches are hidden by default. The two filters are mutually exclusive,
+    // and clicking the selected filter again returns to hiding all completed matches.
+    let completedMatchFilter = "none"; // "none", "recent", or "all"
+
+    function toggleCompletedMatchFilter(filter) {
+        completedMatchFilter = completedMatchFilter === filter ? "none" : filter;
+        loadTournament();
+    }
+
     // ============================================================
     // LOAD TOURNAMENT
     // ============================================================
@@ -1291,18 +1322,45 @@
 
         stagesContainer.innerHTML = "";
 
-
+        // In the Predictions section, only allow completed matches from the
+        // last 30 hours (measured from scheduled_at) to be shown.
+        const completedCutoff = Date.now() - (30 * 60 * 60 * 1000);
+        const recentCompletedMatches = matches.filter(match =>
+            match.status === "complete" &&
+            new Date(match.scheduled_at).getTime() >= completedCutoff
+        );
+        const recentCompletedMatchIds = new Set(
+            recentCompletedMatches.map(match => String(match.id))
+        );
+        const completedMatchCount = matches.filter(match => match.status === "complete").length;
+        const recentToggleButton = document.getElementById("showRecentCompletedMatchesButton");
+        const allToggleButton = document.getElementById("showAllCompletedMatchesButton");
+        recentToggleButton.innerText = "Show recent completed matches (" + recentCompletedMatches.length + ")";
+        allToggleButton.innerText = "Show all completed matches (" + completedMatchCount + ")";
+        recentToggleButton.classList.toggle("filter-selected", completedMatchFilter === "recent");
+        allToggleButton.classList.toggle("filter-selected", completedMatchFilter === "all");
 
         // Create each stage
 
         stages.forEach(stage => {
 
-            const stageMatches =
-                matches.filter(
-                    match =>
-                        match.stage_id ===
-                        stage.id
-                );
+            const allStageMatches = matches.filter(
+                match => match.stage_id === stage.id
+            );
+            const stageMatches = allStageMatches.filter(match => {
+                if (match.status !== "complete") return true;
+                if (completedMatchFilter === "all") return true;
+                if (completedMatchFilter === "recent") {
+                    return recentCompletedMatchIds.has(String(match.id));
+                }
+                return false;
+            });
+
+            // Don't show a stage card if it only contains completed matches
+            // and completed matches are currently hidden.
+            if (allStageMatches.length > 0 && stageMatches.length === 0) {
+                return;
+            }
 
 
             const stageCard =
@@ -2376,6 +2434,14 @@
 
 
 
+    // Completed matches in Manage Matches are hidden by default.
+    let showCompletedAdminMatches = false;
+
+    function toggleAdminCompletedMatches() {
+        showCompletedAdminMatches = !showCompletedAdminMatches;
+        loadAdminMatches();
+    }
+
     // ============================================================
     // LOAD ADMIN MATCHES
     // ============================================================
@@ -2423,9 +2489,32 @@
 			return;
 		}
 
+		const completedCount = matches.filter(
+			match => match.status === "complete"
+		).length;
+
+		const toggleButton = document.getElementById(
+			"toggleAdminCompletedMatchesButton"
+		);
+		if (toggleButton) {
+			toggleButton.style.display = completedCount > 0 ? "inline-block" : "none";
+			toggleButton.innerText = showCompletedAdminMatches
+				? "Hide completed matches (" + completedCount + ")"
+				: "Show completed matches (" + completedCount + ")";
+		}
+
 		container.innerHTML = "";
 
-		matches.forEach(match => {
+		const visibleMatches = matches.filter(
+			match => showCompletedAdminMatches || match.status !== "complete"
+		);
+
+		if (visibleMatches.length === 0) {
+			container.innerText = "No upcoming matches. Show completed matches to view past matches.";
+			return;
+		}
+
+		visibleMatches.forEach(match => {
 
 			const matchDiv =
 				document.createElement("div");
