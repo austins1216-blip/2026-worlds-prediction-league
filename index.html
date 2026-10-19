@@ -552,6 +552,8 @@
 
             <hr>
 
+            <hr>
+
             <h3>Invite Players</h3>
 
             <p>
@@ -629,6 +631,12 @@
                 “Recent” includes matches scheduled within the last 30 hours.
             </p>
             <div id="stagesContainer"></div>
+            <div id="pendingPickControls" style="margin-top:0; padding-top:8px; border-top:1px solid #ddd;">
+                <p id="pendingPickSummary">Select winners for multiple matches, then save them together.</p>
+                <button id="saveAllPicksButton" onclick="saveAllSelectedPicks()">Save All Selected Picks</button>
+                <button class="secondary" onclick="discardSelectedPicks()">Discard Unsaved Picks</button>
+                <div id="saveAllPicksMessage" class="message"></div>
+            </div>
 
         </div>
 
@@ -1126,6 +1134,50 @@
     function toggleCompletedMatchFilter(filter) {
         completedMatchFilter = completedMatchFilter === filter ? "none" : filter;
         loadTournament();
+    }
+
+    // Picks selected on the page are staged locally until the player saves them together.
+    const pendingPredictions = {};
+
+    function updatePendingPickSummary() {
+        const count = Object.keys(pendingPredictions).length;
+        const summary = document.getElementById("pendingPickSummary");
+        if (summary) summary.textContent = count
+            ? `${count} unsaved pick(s) selected. Save them together when you're ready.`
+            : "Select winners for multiple matches, then save them together.";
+    }
+
+    function discardSelectedPicks() {
+        Object.keys(pendingPredictions).forEach(id => delete pendingPredictions[id]);
+        loadTournament();
+        updatePendingPickSummary();
+        const message = document.getElementById("saveAllPicksMessage");
+        if (message) message.textContent = "Unsaved selections discarded.";
+    }
+
+    async function saveAllSelectedPicks() {
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        const message = document.getElementById("saveAllPicksMessage");
+        if (userError || !user) { message.textContent = "Please log in first."; return; }
+        const picks = Object.entries(pendingPredictions).map(([matchId, winner]) => ({
+            user_id: user.id,
+            match_id: Number(matchId),
+            predicted_winner: winner,
+            updated_at: new Date().toISOString()
+        }));
+        if (!picks.length) { message.textContent = "Select at least one match winner first."; return; }
+        message.textContent = "Saving selected picks...";
+        const { error } = await supabaseClient.from("predictions").upsert(picks, { onConflict: "user_id,match_id" });
+        if (error) {
+            console.error("Save all picks error:", error);
+            message.textContent = "Could not save picks: " + error.message;
+            return;
+        }
+        Object.keys(pendingPredictions).forEach(id => delete pendingPredictions[id]);
+        message.textContent = `Successfully saved ${picks.length} pick(s).`;
+        await loadTournament();
+        await loadPredictionDashboard();
+        updatePendingPickSummary();
     }
 
     // ============================================================
@@ -1925,6 +1977,15 @@
 
         }
 
+        const pendingWinner = pendingPredictions[String(match.id)];
+        if (pendingWinner === match.team_1) {
+            team1.classList.add("selected");
+            team2.classList.remove("selected");
+        } else if (pendingWinner === match.team_2) {
+            team2.classList.add("selected");
+            team1.classList.remove("selected");
+        }
+
 
 
         if (myPrediction) {
@@ -1949,6 +2010,13 @@
         }
 
 
+
+        if (pendingWinner) {
+            const pendingLabel = document.createElement("div");
+            pendingLabel.className = "points pending-pick-label";
+            pendingLabel.textContent = "Unsaved selection: " + pendingWinner;
+            div.appendChild(pendingLabel);
+        }
 
         team1.onclick = () =>
             selectTeam(
@@ -1978,71 +2046,22 @@
     // SELECT TEAM
     // ============================================================
 
-    function selectTeam(
-        match,
-        selectedButton,
-        otherButton,
-        team
-    ) {
-
-        selectedButton.classList.add(
-            "selected"
-        );
-
-
-        otherButton.classList.remove(
-            "selected"
-        );
-
-
-
-        const matchElement =
-            selectedButton.closest(
-                ".match"
-            );
-
-
-        const existingButton =
-            matchElement.querySelector(
-                ".submit-button"
-            );
-
-
-        if (existingButton) {
-
-            existingButton.remove();
-
+    function selectTeam(match, selectedButton, otherButton, team) {
+        selectedButton.classList.add("selected");
+        otherButton.classList.remove("selected");
+        pendingPredictions[String(match.id)] = team;
+        const matchElement = selectedButton.closest(".match");
+        let pendingLabel = matchElement.querySelector(".pending-pick-label");
+        if (!pendingLabel) {
+            pendingLabel = document.createElement("div");
+            pendingLabel.className = "points pending-pick-label";
+            matchElement.appendChild(pendingLabel);
         }
-
-
-
-        const submitButton =
-            document.createElement(
-                "button"
-            );
-
-
-        submitButton.className =
-            "submit-button";
-
-
-        submitButton.innerText =
-            "Submit Prediction";
-
-
-        submitButton.onclick = () =>
-            submitPrediction(
-                match.id,
-                team
-            );
-
-
-        matchElement.appendChild(
-            submitButton
-        );
-
+        pendingLabel.textContent = "Unsaved selection: " + team;
+        updatePendingPickSummary();
+        const message = document.getElementById("saveAllPicksMessage");
+        if (message) message.textContent = "";
     }
-
 
 
     // ============================================================
@@ -2430,9 +2449,8 @@
 
 		await loadAdminMatches();
 
+
 }
-
-
 
     // Completed matches in Manage Matches are hidden by default.
     let showCompletedAdminMatches = false;
@@ -3181,4 +3199,4 @@
 
 </body>
 
-</html>
+</html>sssssssssssssssssssssssssssssssssssssssss
